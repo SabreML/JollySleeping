@@ -1,6 +1,5 @@
 ﻿using BepInEx;
 using Menu;
-using MoreSlugcats;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,29 +9,6 @@ using UnityEngine;
 [BepInPlugin("sabreml.jollysleeping", "JollySleeping", "0.1.0")]
 public class JollySleepingMod : BaseUnityPlugin
 {
-	// Dictionary of slugcat types and their position on the sleeping screen. The order of the entries determines layering.
-	private readonly Dictionary<string, Vector2> slugcatPositions = new Dictionary<string, Vector2>
-		{
-			{ "Rivulet",    new Vector2(623f, 151f) },
-			{ "Saint",		new Vector2(803f, 134f) },
-			{ "Spear",		new Vector2(822f, 63f) },
-			{ "Gourmand",	new Vector2(708f, 53f) },
-			{ "Artificer",	new Vector2(782f, 117f) },
-			{ "White",		new Vector2(677f, 63f) },
-			{ "Yellow",		new Vector2(782f, 117f) },
-			{ "Red",		new Vector2(817f, 112f) }
-		};
-	/* Default positions
-	{ "Saint",		new Vector2(811f, 66f) },
-	{ "Spear",		new Vector2(671f, 77f) },
-	{ "Rivulet",	new Vector2(805f, 109f) },
-	{ "Gourmand",	new Vector2(748f, 115f) },
-	{ "Artificer",	new Vector2(782f, 117f) },
-	{ "White",		new Vector2(677f, 63f) },
-	{ "Yellow",		new Vector2(782f, 117f) },
-	{ "Red",		new Vector2(817f, 112f) }
-	*/
-
 	// List of the slugcat types of each player.
 	private List<string> playerSlugcatTypes;
 
@@ -53,7 +29,11 @@ public class JollySleepingMod : BaseUnityPlugin
 	{
 		orig(self, m);
 
-		playerSlugcatTypes = self.characterStatsJollyplayer.Select(playerStats => playerStats?.name.value).ToList();
+		playerSlugcatTypes = self.characterStatsJollyplayer
+			.Where(playerStats => playerStats != null)
+			.Select(playerStats => playerStats.name.value)
+			.ToList();
+		playerSlugcatTypes.Sort(); // Sort the list alphabetically.
 		Debug.Log("(JollySleeping) Player stats cached.");
 	}
 
@@ -64,7 +44,6 @@ public class JollySleepingMod : BaseUnityPlugin
 		{
 			return;
 		}
-
 		if (playerSlugcatTypes == null)
 		{
 			Debug.Log("(JollySleeping) Player stats not cached!");
@@ -72,7 +51,7 @@ public class JollySleepingMod : BaseUnityPlugin
 		}
 		if (playerSlugcatTypes.Count < 2) // Don't mess with anything if it's just singleplayer.
 		{
-			Debug.Log("(JollySleeping) < 2 players detected, setting default illustration."); // todo: this doesn't work
+			Debug.Log("(JollySleeping) < 2 players detected, using default illustration.");
 			return;
 		}
 
@@ -84,6 +63,29 @@ public class JollySleepingMod : BaseUnityPlugin
 		AddSlugcatIllustrations(self);
 	}
 
+	private void AddSlugcatIllustrations(MenuScene self)
+	{
+		string folderName = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - jollysleeping";
+		string fileName = string.Join("-", playerSlugcatTypes);
+		Debug.Log("(JollySleeping) " + fileName);
+
+		// Spearmaster doodles
+		if (ModManager.MSC && playerSlugcatTypes.Contains("Spear"))
+		{
+			List<string> doodlePaths = GetRandomDoodle();
+
+			self.AddIllustration(new MenuDepthIllustration(self.menu, self, doodlePaths[0], doodlePaths[1], new Vector2(), 2.2f, MenuDepthIllustration.MenuShader.Basic)); // Todo: Positioning
+		}
+
+		// Add the slugcats to the scene.
+		self.AddIllustration(new MenuDepthIllustration(self.menu, self, folderName, fileName, new Vector2(782f, 117f), 1.7f, MenuDepthIllustration.MenuShader.Normal));
+
+		// Add the foreground grass back in too.
+		string grassFolder = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - White";
+		self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassFolder, "Sleep - 1", new Vector2(486f, -54f), 1.2f, MenuDepthIllustration.MenuShader.Normal));
+	}
+
+	/* Code for automatically combining different illustrations entirely through the game without needing custom-made versions.
 	private void AddSlugcatIllustrations(MenuScene self)
 	{
 		bool spearmaster = false;
@@ -120,6 +122,7 @@ public class JollySleepingMod : BaseUnityPlugin
 		string grassPath = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - Spear";
 		self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassPath, "Sleep - 1", new Vector2(486f, -54f), 1.2f, MenuDepthIllustration.MenuShader.Normal));
 	}
+	*/
 
 	// Returns the folder and file path for a random spearmaster doodle.
 	private List<string> GetRandomDoodle()
