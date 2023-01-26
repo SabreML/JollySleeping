@@ -13,10 +13,24 @@ namespace JollySleeping // Todo: Actual descriptive comments
 	[BepInPlugin("sabreml.jollysleeping", "JollySleeping", "0.1.0")]
 	public class JollySleepingMod : BaseUnityPlugin
 	{
-		// List of the slugcat types of each player.
+		/// <summary>List of the slugcat types of each player.</summary>
+		/// <remarks>Each entry is lowercase, and is unique in the list.</remarks>
 		private List<string> playerSlugcatTypes;
 
-		// Dictionary of slugcat illustration positions
+		/// <summary>Dictionary of slugcat illustration positions.</summary>
+		/// <remarks>
+		/// The contained data is the same as <c>'scenes\sleep screen - jollysleeping\positions.txt'</c>,
+		/// but with the keys and values flipped.<br/>
+		/// This is so that multiple illustrations can be easily assigned to a single coordinate in the <c>.txt</c> file without a new line being needed for each.
+		/// </remarks>
+		/// <value>
+		/// <code>
+		/// {
+		///   "Illustration name 1": Vector2(x, y),
+		///   "Illustration name 2": Vector2(x, y)
+		/// }
+		/// </code>
+		/// </value>
 		private Dictionary<string, Vector2> illustrationPositions;
 
 
@@ -39,7 +53,9 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			VerifyFileNames();
 		}
 
-		// positions file but reversed (better comment later)
+		/// <summary>Parses the data from <c>'scenes\sleep screen - jollysleeping\positions.txt'</c> and returns a formatted dictionary.</summary>
+		/// <returns>A dictionary containing data from <c>positions.txt</c> but with the keys and values flipped.</returns>
+		/// <seealso cref="illustrationPositions"/>
 		private Dictionary<string, Vector2> ReadPositionsFile()
 		{
 			Dictionary<string, Vector2> output = new Dictionary<string, Vector2>();
@@ -60,6 +76,12 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			return output;
 		}
 
+		/// <summary>Verifies that all png files in <c>'scenes\sleep screen - jollysleeping'</c> are properly alphabetical.</summary>
+		/// <remarks>
+		/// Throwing a consistent exception in users' games if the mod creator forgot something is generally a bad idea,
+		/// so hopefully this will force me to properly test everything before pushing.
+		/// </remarks>
+		/// <exception cref="System.Exception">Thrown if a file name is found to be incorrect.</exception>
 		private void VerifyFileNames()
 		{
 			// Verify that all of the new PNG files are properly formatted. (Alphabetical name order with dashes)
@@ -86,8 +108,7 @@ namespace JollySleeping // Todo: Actual descriptive comments
 				}
 				if (!alphabetical)
 				{
-					Debug.Log($"(JollySleeping) File {fileName}.png is not named alphabetically! This may cause issues later.");
-					break;
+					throw new System.Exception($"(JollySleeping) File {fileName}.png is not named alphabetically!");
 				}
 			}
 		}
@@ -95,6 +116,11 @@ namespace JollySleeping // Todo: Actual descriptive comments
 
 		/* ########## -HOOKS- ########## */
 
+		/// <summary>
+		/// Uses the <see cref="StoryGameSession.characterStatsJollyplayer"/> array once it's been created to get the
+		/// names of each slugcat controlled by a player, and assigns them to <see cref="playerSlugcatTypes"/>.
+		/// </summary>
+		/// <seealso cref="playerSlugcatTypes"/>
 		private void CreateJollySlugStatsHK(On.StoryGameSession.orig_CreateJollySlugStats orig, StoryGameSession self, bool m)
 		{
 			orig(self, m);
@@ -106,9 +132,13 @@ namespace JollySleeping // Todo: Actual descriptive comments
 				.Distinct() // Duplicate entires get merged into one for simplicity. (["gourmand", "gourmand", "gourmand", "rivulet"] -> ["gourmand", "rivulet"])
 				.ToList();
 			playerSlugcatTypes.Sort(); // Sort the list alphabetically.
-			Debug.Log("(JollySleeping) Players cached.");
+			Debug.Log("(JollySleeping) Player types cached.");
 		}
 
+		/// <summary>
+		/// Removes existing illustrations which are about to be replaced, and calls either <see cref="AddSingleplayerSlugcat(MenuScene, bool)"/><br/>
+		/// or <see cref="AddMultiplayerSlugcats(MenuScene, bool)"/> depending on the player count.
+		/// </summary>
 		private void MenuSceneHK(On.Menu.MenuScene.orig_ctor orig, MenuScene self, Menu.Menu menu, MenuObject owner, MenuScene.SceneID sceneID)
 		{
 			orig(self, menu, owner, sceneID);
@@ -118,7 +148,7 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			}
 			if (playerSlugcatTypes == null)
 			{
-				Debug.Log("(JollySleeping) Players not cached!");
+				Debug.Log("(JollySleeping) Player types not cached!");
 				return;
 			}
 
@@ -146,6 +176,15 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			}
 		}
 
+		/// <summary>
+		/// Adds Slugcat and grass illustrations back into the scene, selecting the Slugcat illustration variant based on the combined contents of <see cref="playerSlugcatTypes"/>.
+		/// </summary>
+		/// <remarks>
+		/// The position of the Slugcat illustration will default to <c>Vector2(568f, 33f)</c> unless the variant has an override set in <c>positions.txt</c>/<see cref="illustrationPositions"/>,
+		/// in which case that will be used instead.
+		/// </remarks>
+		/// <seealso cref="illustrationPositions"/>
+		/// <param name="spearmaster"><c>bool</c> indicating if the one of the players is using Spearmaster.</param>
 		private void AddMultiplayerSlugcats(MenuScene self, bool spearmaster)
 		{
 			string folderName = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - JollySleeping";
@@ -177,6 +216,16 @@ namespace JollySleeping // Todo: Actual descriptive comments
 				MenuDepthIllustration.MenuShader.Normal));
 		}
 
+		/// <summary>
+		/// Adds Slugcat and grass illustrations back into the scene from <c>playerSlugcatTypes[0]</c>'s 'Sleep Screen' folder, and calls <see cref="MenuScene.RefreshPositions"/> to <br/>
+		/// position everything identically to the sleep scene in singleplayer.
+		/// </summary>
+		/// <remarks>
+		/// If the player is using Spearmaster (<paramref name="spearmaster"/> param), the existing foreground and background grass textures are unloaded from the game's atlas manager <br/>
+		/// in order to allow Spearmaster's custom versions to replace them. <br/>
+		/// A random drawing is also added via <see cref="AddSpearmasterDoodle(MenuScene)"/>.
+		/// </remarks>
+		/// <param name="spearmaster"><c>bool</c> indicating if the player is using Spearmaster.</param>
 		private void AddSingleplayerSlugcat(MenuScene self, bool spearmaster)
 		{
 			string playerSlugcat = playerSlugcatTypes[0];
@@ -208,7 +257,9 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			self.RefreshPositions();
 		}
 
-		// Picks and adds a random spearmaster doodle.
+		/// <summary>
+		/// Picks a random drawing (<c>'sleep - d1-11.png'</c>) from  <c>'scenes\sleep screen - spear'</c> and adds it to the scene.
+		/// </summary>
 		private void AddSpearmasterDoodle(MenuScene self)
 		{
 			string folderPath = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - Spear";
