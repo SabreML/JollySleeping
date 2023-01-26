@@ -1,0 +1,3 @@
+618, 40: gourmand-red
+592, -2: artificer-saint
+569, -17: artificer-yellow

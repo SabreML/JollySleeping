@@ -5,5 +5,7 @@
     "target_game_version": "1.9.02",
     "authors": "SabreML",
     "description": "Blah blah placeholder!",
-    "checksum_override_version": false
+    "requirements": ["jollycoop"],
+    "requirements_names": ["Jolly Co-op"],
+    "checksum_override_version": true
 }
