@@ -1,3 +1,7 @@
-618, 40: gourmand-red
+581, -17: artificer-yellow
 592, -2: artificer-saint
-569, -17: artificer-yellow
+592, 103: red-saint, saint-white
+600, 70: gourmand-saint, gourmand-yellow
+600, 85: saint-yellow
+610, 33: red-rivulet, red-white, red-yellow
+618, 40: artificer-gourmand, artificer-white, artificer-gourmand-red-rivulet, gourmand-red, gourmand-rivulet, gourmand-white

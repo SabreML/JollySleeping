@@ -4,18 +4,51 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+// This whole file contains awful code with 0 quality control. Take solace in the fact that it will be deleted once the mod releases.
+
 namespace JollySleeping
 {
 	internal class TestingTools
 	{
-		public static void InitHooks()
+		private readonly ProcessManager processManagerCache;
+
+		public TestingTools(RainWorld rainWorld)
 		{
-			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFile; // temp for testing
-			On.Menu.MenuScene.Update += MenuScene_Update; // temp for testing
-			On.Menu.MenuScene.RefreshPositions += MenuScene_RefreshPositions1;
+			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFile;
+			On.Menu.MenuScene.RefreshPositions += MenuScene_RefreshPositionsHK;
+
+			processManagerCache = rainWorld.processManager;
 		}
 
-		private static void MenuScene_SaveToFile(On.Menu.MenuScene.orig_SaveToFile orig, MenuScene self)
+		public void Update()
+		{
+			if (!(processManagerCache.currentMainLoop is Menu.Menu menu))
+			{
+				return;
+			}
+			if (Input.GetKeyDown("d"))
+			{
+				SetDefaultPos(menu.scene);
+			}
+			if (Input.GetKeyDown("f"))
+			{
+				SetActualPos(menu.scene);
+			}
+			if (Input.GetKeyDown("p"))
+			{
+				CycleIllustrationPos(menu.scene);
+			}
+			if (Input.GetKeyDown("l"))
+			{
+				GetNewIllustration(menu.scene);
+			}
+			if (Input.GetKeyDown("m"))
+			{
+				ToggleMonk(menu.scene);
+			}
+		}
+
+		private void MenuScene_SaveToFile(On.Menu.MenuScene.orig_SaveToFile orig, MenuScene self)
 		{
 			Debug.Log($"Positions : {self.sceneID.value}");
 			for (int i = 0; i < self.depthIllustrations.Count; i++)
@@ -25,28 +58,77 @@ namespace JollySleeping
 			}
 		}
 
-		private static void MenuScene_Update(On.Menu.MenuScene.orig_Update orig, MenuScene self)
+		private void SetDefaultPos(MenuScene self)
 		{
-			orig(self);
-			if (Input.GetKeyDown("l"))
-			{
-				GetNewIllustration(self);
-			}
-			if (Input.GetKeyDown("m"))
-			{
-				ToggleMonk(self);
-			}
+			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
+			currentIllust.pos.x = 568f;
+			currentIllust.pos.y = 33f;
+			Debug.Log("Position set to default.");
 		}
-		private static void GetNewIllustration(MenuScene self)
+
+		private void SetActualPos(MenuScene self)
 		{
-			MenuDepthIllustration currentIllust = self.depthIllustrations.Find(item => Regex.IsMatch(item.fileName, @"sleep - 2|(artificer|saint|gourmand|rivulet|spear|white|red|yellow)", RegexOptions.IgnoreCase));
+			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
+			if (JollySleepingMod.illustrationPositions.ContainsKey(currentIllust.fileName))
+			{
+				Vector2 newPos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
+				if (currentIllust.pos == newPos)
+				{
+					Debug.Log("Position already at custom.");
+					return;
+				}
+				currentIllust.pos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
+				Debug.Log("Position set to custom.");
+				return;
+			}
+			Vector2 defaultPos = new Vector2(568f, 33f);
+			if (currentIllust.pos == defaultPos)
+			{
+				Debug.Log("Position already at default.");
+				return;
+			}
+			currentIllust.pos = defaultPos;
+			Debug.Log("Position set to default.");
+		}
+
+		private void CycleIllustrationPos(MenuScene self)
+		{
+			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
+			Dictionary<string, Vector2> positions = JollySleepingMod.illustrationPositions;
+
+			int nextIndex = 1000;
+			for (int i = 0; i < positions.Count; i++)
+			{
+				if (positions.ElementAt(i).Value == currentIllust.pos)
+				{
+					nextIndex = (i + 1) % positions.Count;
+					while (positions.ElementAt(nextIndex).Value == currentIllust.pos) // Get past any others with the same coordinates.
+					{
+						nextIndex = (nextIndex + 1) % positions.Count;
+					}
+					break;
+				}
+			}
+			if (nextIndex == 1000) // haven't found anything
+			{
+				nextIndex = 0;
+			}
+
+			KeyValuePair<string, Vector2> nextElement = positions.ElementAt(nextIndex);
+			Debug.Log($"Illustration pos: {currentIllust.pos} --> {nextElement.Value} | {nextElement.Key}");
+			currentIllust.pos = nextElement.Value;
+		}
+
+		private void GetNewIllustration(MenuScene self)
+		{
+			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
 			MenuDepthIllustration grassIllust = self.depthIllustrations.Find(item => item.fileName.Contains("- 1")); // grass stuff
 
 			List<string> dirList = AssetManager.ListDirectory($"Scenes/Sleep Screen - JollySleeping").ToList();
 			dirList.RemoveAll(item => item.Contains("positions.txt"));
-			int currentFileIndex = dirList.FindIndex(item => item.Contains(currentIllust.fileName.ToLower() + ".png"));
+			int currentFileIndex = dirList.FindIndex(item => Regex.Match(item, $@"[/\\].+[/\\]{currentIllust.fileName}.png").Success);
 
-			string targetFile = Regex.Match(dirList[(currentFileIndex + 1) % dirList.Count], @"\\(?!.*\\)(.*-.*).png").Groups[1].Value;
+			string targetFile = Regex.Match(dirList[(currentFileIndex + 1) % dirList.Count], @"[/\\].+[/\\](.+)\.png").Groups[1].Value;
 
 			// add new stuff
 			Debug.Log($"{currentIllust.fileName} -> {targetFile}");
@@ -64,9 +146,9 @@ namespace JollySleeping
 			grassIllust = null;
 		}
 
-		private static MenuDepthIllustration tempMonk;
+		private MenuDepthIllustration tempMonk;
 
-		private static void ToggleMonk(MenuScene self)
+		private void ToggleMonk(MenuScene self)
 		{
 			if (tempMonk != null)
 			{
@@ -84,7 +166,7 @@ namespace JollySleeping
 			}
 		}
 
-		private static void MenuScene_RefreshPositions1(On.Menu.MenuScene.orig_RefreshPositions orig, MenuScene self)
+		private void MenuScene_RefreshPositionsHK(On.Menu.MenuScene.orig_RefreshPositions orig, MenuScene self)
 		{
 			if (self.sceneID != MenuScene.SceneID.SleepScreen)
 			{
@@ -103,7 +185,12 @@ namespace JollySleeping
 			}
 		}
 
-		private static Dictionary<string, string> LogIllustrationPos(MenuScene self)
+		private MenuDepthIllustration GetCurrentIllustration(MenuScene scene)
+		{
+			return scene.depthIllustrations.Find(item => Regex.IsMatch(item.fileName, @"sleep - 2|(artificer|saint|gourmand|rivulet|spear|white|red|yellow)", RegexOptions.IgnoreCase));
+		}
+
+		private Dictionary<string, string> LogIllustrationPos(MenuScene self)
 		{
 			// illustration.fileName: illustration.pos
 			Dictionary<string, string> result = new Dictionary<string, string>();

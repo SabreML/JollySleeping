@@ -7,8 +7,9 @@ using System.Security.Permissions;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+#pragma warning disable CS0618
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
-namespace JollySleeping // Todo: Actual descriptive comments
+namespace JollySleeping
 {
 	[BepInPlugin("sabreml.jollysleeping", "JollySleeping", "0.1.0")]
 	public class JollySleepingMod : BaseUnityPlugin
@@ -31,19 +32,22 @@ namespace JollySleeping // Todo: Actual descriptive comments
 		/// }
 		/// </code>
 		/// </value>
-		private Dictionary<string, Vector2> illustrationPositions;
+		public static Dictionary<string, Vector2> illustrationPositions; // Temporarily `public static` so that `TestingTools` can use it.
 
+		private TestingTools tempTestingTools; // Temporary for testing.
 
 		/* ########## -SETUP- ########## */
+
+		public void Update() // Temporary for testing.
+		{
+			tempTestingTools?.Update();
+		}
 
 		public void OnEnable()
 		{
 			On.RainWorld.OnModsInit += OnInit;
 			On.StoryGameSession.CreateJollySlugStats += CreateJollySlugStatsHK;
 			On.Menu.MenuScene.ctor += MenuSceneHK;
-
-			// Temporary for testing/debugging.
-			TestingTools.InitHooks();
 		}
 
 		private void OnInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
@@ -51,6 +55,8 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			orig(self);
 			illustrationPositions = ReadPositionsFile();
 			VerifyFileNames();
+
+			tempTestingTools = new TestingTools(self); // Temporary for testing
 		}
 
 		/// <summary>Parses the data from <c>'scenes\sleep screen - jollysleeping\positions.txt'</c> and returns a formatted dictionary.</summary>
@@ -164,32 +170,36 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			self.depthIllustrations.RemoveAll(item => Regex.IsMatch(item.fileName, pattern));
 			self.subObjects.RemoveAll(item => Regex.IsMatch((item as MenuDepthIllustration).fileName, pattern));
 
+			MenuDepthIllustration newIllustration;
 			if (multiplayer)
 			{
 				// Use the custom art for different combinations of slugcats.
-				AddMultiplayerSlugcats(self, spearmaster);
+				newIllustration = AddMultiplayerSlugcats(self, spearmaster);
 			}
 			else
 			{
 				// Use the default art for the slugcat they're playing as.
-				AddSingleplayerSlugcat(self, spearmaster);
+				newIllustration = AddSingleplayerSlugcat(self, spearmaster);
 			}
+
+
+			Debug.Log($"(JollySleeping) Displaying {newIllustration.fileName} at {newIllustration.pos}");
 		}
 
 		/// <summary>
 		/// Adds Slugcat and grass illustrations back into the scene, selecting the Slugcat illustration variant based on the combined contents of <see cref="playerSlugcatTypes"/>.
 		/// </summary>
 		/// <remarks>
-		/// The position of the Slugcat illustration will default to <c>Vector2(568f, 33f)</c> unless the variant has an override set in <c>positions.txt</c>/<see cref="illustrationPositions"/>,
+		/// The position of the Slugcat illustration will default to <c>Vector2(568f, 33f)</c> unless the variant has an override set in <c>positions.txt</c> (<see cref="illustrationPositions"/>),
 		/// in which case that will be used instead.
 		/// </remarks>
 		/// <seealso cref="illustrationPositions"/>
 		/// <param name="spearmaster"><c>bool</c> indicating if the one of the players is using Spearmaster.</param>
-		private void AddMultiplayerSlugcats(MenuScene self, bool spearmaster)
+		/// <returns>The <see cref="MenuDepthIllustration"/> of the new slugcat image.</returns>
+		private MenuDepthIllustration AddMultiplayerSlugcats(MenuScene self, bool spearmaster)
 		{
 			string folderName = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - JollySleeping";
 			string fileName = string.Join("-", playerSlugcatTypes);
-			Debug.Log($"(JollySleeping) Displaying {fileName}");
 
 			// Spearmaster doodles
 			//if (spearmaster)
@@ -205,15 +215,15 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			// Check if this illustration has a position override set.
 			if (illustrationPositions.ContainsKey(slugcatIllustration.fileName))
 			{
-				Debug.Log("Old: " + slugcatIllustration.pos);
 				slugcatIllustration.pos = illustrationPositions[slugcatIllustration.fileName];
-				Debug.Log("New: " + slugcatIllustration.pos);
 			}
 
 			// Add the foreground grass back in too. (Grass has to be added afterwards for layering)
 			string grassFolder = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - White";
 			self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassFolder, "Sleep - 1", new Vector2(486f, -54f), 1.2f,
 				MenuDepthIllustration.MenuShader.Normal));
+
+			return slugcatIllustration;
 		}
 
 		/// <summary>
@@ -226,11 +236,11 @@ namespace JollySleeping // Todo: Actual descriptive comments
 		/// A random drawing is also added via <see cref="AddSpearmasterDoodle(MenuScene)"/>.
 		/// </remarks>
 		/// <param name="spearmaster"><c>bool</c> indicating if the player is using Spearmaster.</param>
-		private void AddSingleplayerSlugcat(MenuScene self, bool spearmaster)
+		/// <returns>The <see cref="MenuDepthIllustration"/> of the new slugcat image.</returns>
+		private MenuDepthIllustration AddSingleplayerSlugcat(MenuScene self, bool spearmaster)
 		{
 			string playerSlugcat = playerSlugcatTypes[0];
 			self.sceneFolder = $"Scenes{Path.DirectorySeparatorChar}Sleep Screen - {playerSlugcat}";
-			Debug.Log($"(JollySleeping) Displaying Sleep - 2 - {playerSlugcat}");
 
 			// Spearmaster doodles
 			if (spearmaster)
@@ -247,14 +257,18 @@ namespace JollySleeping // Todo: Actual descriptive comments
 			}
 
 			// Add the slugcat to the scene.
-			self.AddIllustration(new MenuDepthIllustration(self.menu, self, self.sceneFolder, $"Sleep - 2 - {playerSlugcat}", new Vector2(), 1.7f,
-				MenuDepthIllustration.MenuShader.Normal));
+			MenuDepthIllustration slugcatIllustration = new MenuDepthIllustration(self.menu, self, self.sceneFolder, $"Sleep - 2 - {playerSlugcat}", new Vector2(), 1.7f,
+				MenuDepthIllustration.MenuShader.Normal);
+			self.AddIllustration(slugcatIllustration);
+
 			// Add the foreground grass back in too. (Grass has to be added afterwards for layering)
 			self.AddIllustration(new MenuDepthIllustration(self.menu, self, self.sceneFolder, "Sleep - 1", new Vector2(), 1.2f,
 				MenuDepthIllustration.MenuShader.Normal));
 
 			// Fix any positioning issues.
 			self.RefreshPositions();
+
+			return slugcatIllustration;
 		}
 
 		/// <summary>
