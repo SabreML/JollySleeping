@@ -40,7 +40,14 @@ namespace JollySleeping
 			}
 			if (Input.GetKeyDown("l"))
 			{
-				GetNewIllustration(menu.scene);
+				if (Input.GetKey(KeyCode.LeftShift))
+				{
+					GetNewIllustration(menu.scene, true);
+				}
+				else
+				{
+					GetNewIllustration(menu.scene);
+				}
 			}
 			if (Input.GetKeyDown("m"))
 			{
@@ -66,7 +73,7 @@ namespace JollySleeping
 			Debug.Log("Position set to default.");
 		}
 
-		private void SetActualPos(MenuScene self)
+		private void SetActualPos(MenuScene self, bool log = true)
 		{
 			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
 			if (JollySleepingMod.illustrationPositions.ContainsKey(currentIllust.fileName))
@@ -74,21 +81,21 @@ namespace JollySleeping
 				Vector2 newPos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
 				if (currentIllust.pos == newPos)
 				{
-					Debug.Log("Position already at custom.");
+					if (log) { Debug.Log("Position already at custom."); }
 					return;
 				}
 				currentIllust.pos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
-				Debug.Log("Position set to custom.");
+				if (log) { Debug.Log("Position set to custom."); }
 				return;
 			}
 			Vector2 defaultPos = new Vector2(568f, 33f);
 			if (currentIllust.pos == defaultPos)
 			{
-				Debug.Log("Position already at default.");
+				if (log) { Debug.Log("Position already at default."); }
 				return;
 			}
 			currentIllust.pos = defaultPos;
-			Debug.Log("Position set to default.");
+			if (log) { Debug.Log("Position set to default."); }
 		}
 
 		private void CycleIllustrationPos(MenuScene self)
@@ -119,7 +126,7 @@ namespace JollySleeping
 			currentIllust.pos = nextElement.Value;
 		}
 
-		private void GetNewIllustration(MenuScene self)
+		private void GetNewIllustration(MenuScene self, bool setPos = false)
 		{
 			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
 			MenuDepthIllustration grassIllust = self.depthIllustrations.Find(item => item.fileName.Contains("- 1")); // grass stuff
@@ -132,18 +139,23 @@ namespace JollySleeping
 
 			// add new stuff
 			Debug.Log($"{currentIllust.fileName} -> {targetFile}");
-			self.AddIllustration(new MenuDepthIllustration(self.menu, self, currentIllust.folderName, targetFile, currentIllust.pos, currentIllust.depth, currentIllust.shader));
+			self.AddIllustration(new MenuDepthIllustration(self.menu, self, "Scenes/Sleep Screen - JollySleeping", targetFile, currentIllust.pos, currentIllust.depth, currentIllust.shader));
 			self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassIllust.folderName, grassIllust.fileName, grassIllust.pos, grassIllust.depth, grassIllust.shader)); //grass
 
 			// remove old stuff
 			currentIllust.RemoveSprites();
 			self.depthIllustrations.Remove(currentIllust);
 			self.RemoveSubObject(currentIllust);
-			currentIllust = null; // probably don't need to null this but eh
+			currentIllust = null;
 			grassIllust.RemoveSprites();
 			self.depthIllustrations.Remove(grassIllust);
 			self.RemoveSubObject(grassIllust);
 			grassIllust = null;
+
+			if (setPos)
+			{
+				SetActualPos(self, false);
+			}
 		}
 
 		private MenuDepthIllustration tempMonk;
