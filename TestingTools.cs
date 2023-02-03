@@ -14,7 +14,7 @@ namespace JollySleeping
 
 		public TestingTools(RainWorld rainWorld)
 		{
-			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFile;
+			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFileHK;
 			On.Menu.MenuScene.RefreshPositions += MenuScene_RefreshPositionsHK;
 
 			processManagerCache = rainWorld.processManager;
@@ -48,7 +48,7 @@ namespace JollySleeping
 			}
 		}
 
-		private void MenuScene_SaveToFile(On.Menu.MenuScene.orig_SaveToFile orig, MenuScene self)
+		private void MenuScene_SaveToFileHK(On.Menu.MenuScene.orig_SaveToFile orig, MenuScene self)
 		{
 			Debug.Log($"Positions : {self.sceneID.value}");
 			for (int i = 0; i < self.depthIllustrations.Count; i++)

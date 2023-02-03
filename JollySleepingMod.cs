@@ -9,6 +9,7 @@ using UnityEngine;
 
 #pragma warning disable CS0618
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
+#pragma warning restore CS0618
 namespace JollySleeping
 {
 	[BepInPlugin("sabreml.jollysleeping", "JollySleeping", "0.1.0")]
@@ -32,7 +33,9 @@ namespace JollySleeping
 		/// }
 		/// </code>
 		/// </value>
-		public static Dictionary<string, Vector2> illustrationPositions; // Temporarily `public static` so that `TestingTools` can use it.
+		public static Dictionary<string, Vector2> illustrationPositions; // Temporarily `public` so that `TestingTools` can use it.
+
+		private static bool initialised;
 
 		private TestingTools tempTestingTools; // Temporary for testing.
 
@@ -53,10 +56,14 @@ namespace JollySleeping
 		private void OnInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
 		{
 			orig(self);
-			illustrationPositions = ReadPositionsFile();
-			VerifyFileNames();
+			if (!initialised)
+			{
+				illustrationPositions = ReadPositionsFile();
+				VerifyFileNames();
 
-			tempTestingTools = new TestingTools(self); // Temporary for testing
+				tempTestingTools = new TestingTools(self); // Temporary for testing
+				initialised = true;
+			}
 		}
 
 		/// <summary>Parses the data from <c>'scenes\sleep screen - jollysleeping\positions.txt'</c> and returns a formatted dictionary.</summary>

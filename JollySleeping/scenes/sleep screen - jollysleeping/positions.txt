@@ -1,7 +1,18 @@
-581, -17: artificer-yellow
-592, -2: artificer-saint
-592, 103: red-saint, saint-white
-600, 70: gourmand-saint, gourmand-yellow
-600, 85: saint-yellow
-610, 33: red-rivulet, red-white, red-yellow
-618, 40: artificer-gourmand, artificer-white, artificer-gourmand-red-rivulet, gourmand-red, gourmand-rivulet, gourmand-white
+568, 33: artificer-red-rivulet-yellow, artificer-white
+569, 84: artificer-gourmand-red-rivulet
+591, 25: artificer-rivulet
+591, 28: artificer-red
+592, -2: artificer-yellow
+592, 103: artificer-gourmand-red-saint, saint-white, red-saint, saint-yellow
+594, 33: artificer-saint
+599, 28: red-rivulet
+599, 42: gourmand-red
+599, 59: artificer-gourmand-rivulet-white, artificer-gourmand-rivulet-yellow
+606, 48: artificer-gourmand-rivulet
+600, 85: artificer-gourmand-rivulet-saint
+600, 70: artificer-gourmand-red-yellow, artificer-gourmand-red, gourmand-saint
+603, 59: gourmand-yellow
+607, 93: artificer-gourmand-red-white
+610, 33: gourmand-white, red-white, red-yellow, rivulet-white, rivulet-yellow, white-yellow
+619, 62: artificer-gourmand
+620, 45: gourmand-rivulet

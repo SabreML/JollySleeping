@@ -62,4 +62,7 @@
     </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+  <PropertyGroup>
+    <PostBuildEvent>copy /Y "$(TargetPath)" "$(RainWorldSteam)\RainWorld_Data\StreamingAssets\mods\jollysleeping\plugins"</PostBuildEvent>
+  </PropertyGroup>
 </Project>
