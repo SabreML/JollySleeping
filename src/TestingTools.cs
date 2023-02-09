@@ -182,8 +182,10 @@ namespace JollySleeping
 		{
 			if (self.sceneID != MenuScene.SceneID.SleepScreen)
 			{
+				orig(self);
 				return;
 			}
+
 			Dictionary<string, string> before = LogIllustrationPos(self);
 			orig(self);
 			Dictionary<string, string> after = LogIllustrationPos(self);
