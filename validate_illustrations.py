@@ -1,22 +1,7 @@
 # Abandon hope all ye who enter here, for bad python code awaits!
 
 
-import os, re
-
-def main():
-	bad_file_names = check_file_names()
-	bad_position_entries = check_positions_file()
-
-	if len(bad_file_names) == 0 and len(bad_position_entries) == 0:
-		print("Illustrations successfully validated!")
-	else:
-		print("-- Formatting errors discovered --")
-		if len(bad_file_names):
-			print("Illustration file names:")
-			print(bad_file_names)
-		if len(bad_position_entries):
-			print("Positions file:")
-			print(bad_position_entries)
+import os, re, sys
 
 def check_file_names():
 	bad_file_names = []
@@ -68,5 +53,20 @@ def check_name_format(illustration_name):
 	# Formatting is correct!
 	return True
 
+def main():
+	bad_file_names = check_file_names()
+	bad_position_entries = check_positions_file()
+
+	if len(bad_file_names) == 0 and len(bad_position_entries) == 0:
+		print("Illustrations successfully validated!")
+	else:
+		print("-- Formatting errors discovered --")
+		if len(bad_file_names):
+			print("Illustration file names:")
+			print(*bad_file_names, sep = "\n")
+		if len(bad_position_entries):
+			print("Positions file:")
+			print(*bad_position_entries, sep = "\n")
+		sys.exit(1)
 
 main()
