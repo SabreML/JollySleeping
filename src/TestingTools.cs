@@ -12,8 +12,12 @@ namespace JollySleeping
 	{
 		private readonly ProcessManager processManagerCache;
 
+		private MoreSlugcats.ConsoleVisualizer console;
+		private bool consoleVisible = false;
+
 		public TestingTools(RainWorld rainWorld)
 		{
+			On.Menu.MenuScene.Update += MenuScene_UpdateHK;
 			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFileHK;
 			On.Menu.MenuScene.RefreshPositions += MenuScene_RefreshPositionsHK;
 
@@ -52,6 +56,24 @@ namespace JollySleeping
 			if (Input.GetKeyDown("m"))
 			{
 				ToggleMonk(menu.scene);
+			}
+			if (Input.GetKeyDown("k"))
+			{
+				if (console == null)
+				{
+					console = new MoreSlugcats.ConsoleVisualizer();
+				}
+				consoleVisible = !consoleVisible;
+				console.Visibility(consoleVisible);
+			}
+		}
+
+		private void MenuScene_UpdateHK(On.Menu.MenuScene.orig_Update orig, MenuScene self)
+		{
+			orig(self);
+			if (consoleVisible)
+			{
+				console.Update();
 			}
 		}
 
