@@ -49,13 +49,13 @@ namespace JollySleeping
 
 		public void OnEnable()
 		{
-			On.RainWorld.OnModsInit += OnInit;
+			On.RainWorld.OnModsInit += Init;
 			On.StoryGameSession.CreateJollySlugStats += CreateJollySlugStatsHK;
 
 			On.Menu.MenuScene.ctor += SleepSceneBuilder.MenuSceneHK;
 		}
 
-		private void OnInit(On.RainWorld.orig_OnModsInit orig, RainWorld self)
+		private void Init(On.RainWorld.orig_OnModsInit orig, RainWorld self)
 		{
 			orig(self);
 			if (!initialised)

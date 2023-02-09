@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace JollySleeping
 {
-	public class SleepSceneBuilder
+	public static class SleepSceneBuilder
 	{
 		/// <summary>
 		/// Removes existing illustrations which are about to be replaced, and calls either <see cref="AddSingleplayerSlugcat(MenuScene, bool)"/><br/>
