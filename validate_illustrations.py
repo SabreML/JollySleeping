@@ -16,11 +16,12 @@ def check_file_names():
 	return bad_file_names
 
 def check_positions_file():
+	unique_name_list = set()
 	bad_position_entries = []
 	with open("JollySleeping/scenes/sleep screen - jollysleeping/positions.txt", "r") as positions_file:
 		file_lines = positions_file.read().splitlines()
 		for line in file_lines:
-			# Validate the coordinates at the start.
+			# Validate the coordinates at the start of the line.
 			if not re.match(r"-?\d{1,3}, -?\d{1,3}: ", line):
 				bad_position_entries.append(line)
 				continue
@@ -33,6 +34,14 @@ def check_positions_file():
 			# Validate the illustration names individually.
 			illustration_name_list = re.search(r": (.*)", line).group(1).split(", ")
 			for illustration_name in illustration_name_list:
+				# Check for duplicates.
+				prev_length = len(unique_name_list)
+				unique_name_list.add(illustration_name)
+				if len(unique_name_list) == prev_length:
+					bad_position_entries.append(f"{illustration_name} (Duplicate!)")
+					continue
+
+				# Check formatting.
 				if check_name_format(illustration_name) == False:
 					bad_position_entries.append(line)
 					continue
