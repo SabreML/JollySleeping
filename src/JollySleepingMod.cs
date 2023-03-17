@@ -6,6 +6,8 @@ using System.Security.Permissions;
 using System.Text.RegularExpressions;
 using UnityEngine;
 
+// TODO: Rewrite documentation at some point so that it's still actually accurate.
+
 #pragma warning disable CS0618
 [assembly: SecurityPermission(SecurityAction.RequestMinimum, SkipVerification = true)]
 #pragma warning restore CS0618
@@ -16,7 +18,7 @@ namespace JollySleeping
 	{
 		/// <summary>List of the slugcat types of each player.</summary>
 		/// <remarks>Each entry is lowercase, and is unique in the list.</remarks>
-		public static List<string> playerSlugcatTypes;
+		public static List<string> PlayerSlugcatTypes;
 
 		/// <summary>Dictionary of slugcat illustration positions.</summary>
 		/// <remarks>
@@ -32,7 +34,7 @@ namespace JollySleeping
 		/// }
 		/// </code>
 		/// </value>
-		public static Dictionary<string, Vector2> illustrationPositions;
+		public static Dictionary<string, Vector2> IllustrationPositions;
 
 		/// <summary>Bool indicating if the mod has been initialised yet.</summary>
 		private static bool initialised;
@@ -60,16 +62,16 @@ namespace JollySleeping
 			orig(self);
 			if (!initialised)
 			{
-				illustrationPositions = ReadPositionsFile();
+				IllustrationPositions = ReadPositionsFile();
 				initialised = true;
 
-				tempTestingTools = new TestingTools(self); // Temporary for testing
+				tempTestingTools = new TestingTools(); // Temporary for testing
 			}
 		}
 
 		/// <summary>Parses the data from <c>'scenes\sleep screen - jollysleeping\positions.txt'</c> and returns a formatted dictionary.</summary>
 		/// <returns>A dictionary containing data from <c>positions.txt</c> but with the keys and values flipped.</returns>
-		/// <seealso cref="illustrationPositions"/>
+		/// <seealso cref="IllustrationPositions"/>
 		private Dictionary<string, Vector2> ReadPositionsFile()
 		{
 			Dictionary<string, Vector2> output = new Dictionary<string, Vector2>();
@@ -92,20 +94,20 @@ namespace JollySleeping
 
 		/// <summary>
 		/// Uses the <see cref="StoryGameSession.characterStatsJollyplayer"/> array once it's been created to get the
-		/// names of each slugcat controlled by a player, and assigns them to <see cref="playerSlugcatTypes"/>.
+		/// names of each slugcat controlled by a player, and assigns them to <see cref="PlayerSlugcatTypes"/>.
 		/// </summary>
-		/// <seealso cref="playerSlugcatTypes"/>
+		/// <seealso cref="PlayerSlugcatTypes"/>
 		private void CreateJollySlugStatsHK(On.StoryGameSession.orig_CreateJollySlugStats orig, StoryGameSession self, bool m)
 		{
 			orig(self, m);
 
 			// Make a copy of the slugcats being controlled by players.
-			playerSlugcatTypes = self.characterStatsJollyplayer
+			PlayerSlugcatTypes = self.characterStatsJollyplayer
 				.Where(entry => entry != null) // Filter out null entries.
 				.Select(playerStats => playerStats.name.value.ToLower()) // Get the name of the slugcat they're playing as.
 				.Distinct() // Duplicate entires get merged into one for simplicity. (["gourmand", "gourmand", "gourmand", "rivulet"] -> ["gourmand", "rivulet"])
 				.ToList();
-			playerSlugcatTypes.Sort(); // Sort the list alphabetically.
+			PlayerSlugcatTypes.Sort(); // Sort the list alphabetically.
 			Debug.Log("(JollySleeping) Player types cached.");
 		}
 	}

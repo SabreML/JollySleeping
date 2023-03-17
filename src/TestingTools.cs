@@ -10,23 +10,24 @@ namespace JollySleeping
 {
 	internal class TestingTools
 	{
-		private readonly ProcessManager processManagerCache;
-
 		private MoreSlugcats.ConsoleVisualizer console;
 		private bool consoleVisible = false;
 
-		public TestingTools(RainWorld rainWorld)
+		private bool disableDepth = false;
+
+		public TestingTools()
 		{
 			On.Menu.MenuScene.Update += MenuScene_UpdateHK;
 			On.Menu.MenuScene.SaveToFile += MenuScene_SaveToFileHK;
 			On.Menu.MenuScene.RefreshPositions += MenuScene_RefreshPositionsHK;
 
-			processManagerCache = rainWorld.processManager;
+			On.Menu.MenuScene.GrafUpdate += MenuScene_GrafUpdateHK;
+			On.Menu.MenuScene.CamPos += MenuScene_CamPosHK;
 		}
 
 		public void Update()
 		{
-			if (!(processManagerCache.currentMainLoop is Menu.Menu menu))
+			if (!(RWCustom.Custom.rainWorld.processManager.currentMainLoop is Menu.Menu menu))
 			{
 				return;
 			}
@@ -66,6 +67,11 @@ namespace JollySleeping
 				consoleVisible = !consoleVisible;
 				console.Visibility(consoleVisible);
 			}
+			if (Input.GetKeyDown("j"))
+			{
+				disableDepth = !disableDepth;
+				Debug.Log("Scene depth " + (disableDepth ? "disabled." : "enabled."));
+			}
 		}
 
 		private void MenuScene_UpdateHK(On.Menu.MenuScene.orig_Update orig, MenuScene self)
@@ -90,27 +96,27 @@ namespace JollySleeping
 		private void SetDefaultPos(MenuScene self)
 		{
 			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
-			currentIllust.pos.x = 568f;
-			currentIllust.pos.y = 33f;
+			currentIllust.pos = currentIllust.fileName.Contains("spear") ? new Vector2(671f, 77f) : new Vector2(568f, 33f);
 			Debug.Log("Position set to default.");
 		}
 
 		private void SetActualPos(MenuScene self, bool log = true)
 		{
 			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
-			if (JollySleepingMod.illustrationPositions.ContainsKey(currentIllust.fileName))
+			bool spearmaster = currentIllust.fileName.Contains("spear");
+			if (JollySleepingMod.IllustrationPositions.ContainsKey(currentIllust.fileName))
 			{
-				Vector2 newPos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
+				Vector2 newPos = JollySleepingMod.IllustrationPositions[currentIllust.fileName];
 				if (currentIllust.pos == newPos)
 				{
 					if (log) { Debug.Log("Position already at custom."); }
 					return;
 				}
-				currentIllust.pos = JollySleepingMod.illustrationPositions[currentIllust.fileName];
+				currentIllust.pos = JollySleepingMod.IllustrationPositions[currentIllust.fileName];
 				if (log) { Debug.Log("Position set to custom."); }
 				return;
 			}
-			Vector2 defaultPos = new Vector2(568f, 33f);
+			Vector2 defaultPos = spearmaster ? new Vector2(671f, 77f) : new Vector2(568f, 33f);
 			if (currentIllust.pos == defaultPos)
 			{
 				if (log) { Debug.Log("Position already at default."); }
@@ -123,9 +129,9 @@ namespace JollySleeping
 		private void CycleIllustrationPos(MenuScene self)
 		{
 			MenuDepthIllustration currentIllust = GetCurrentIllustration(self);
-			Dictionary<string, Vector2> positions = JollySleepingMod.illustrationPositions;
+			Dictionary<string, Vector2> positions = JollySleepingMod.IllustrationPositions;
 
-			int nextIndex = 1000;
+			int nextIndex = -1;
 			for (int i = 0; i < positions.Count; i++)
 			{
 				if (positions.ElementAt(i).Value == currentIllust.pos)
@@ -138,7 +144,7 @@ namespace JollySleeping
 					break;
 				}
 			}
-			if (nextIndex == 1000) // haven't found anything
+			if (nextIndex == -1) // haven't found anything
 			{
 				nextIndex = 0;
 			}
@@ -161,18 +167,31 @@ namespace JollySleeping
 
 			// add new stuff
 			Debug.Log($"{currentIllust.fileName} -> {targetFile}");
+
+			// spearmaster things
+			bool spearmaster = targetFile.Contains("spear");
+			if (spearmaster)
+			{
+				SleepSceneBuilder.SetupSpearmasterDoodle(self);
+			}
+			else
+			{
+				// just in case it's switching from a spearmaster image
+				RemoveIllustration(self, self.depthIllustrations.Find(item => item.fileName.Contains("- D")));
+				Futile.atlasManager.UnloadAtlas("Sleep - 3");
+				RemoveIllustration(self, self.depthIllustrations.Find(item => item.fileName.Contains("- 3")));
+				self.AddIllustration(new MenuDepthIllustration(self.menu, self, "Scenes/Sleep Screen - White", "Sleep - 3", new Vector2(696f, 118f), 2.2f, MenuDepthIllustration.MenuShader.Normal));
+				Futile.atlasManager.UnloadAtlas("Sleep - 1");
+			}
+			// add the slugcat and foreground grass
 			self.AddIllustration(new MenuDepthIllustration(self.menu, self, "Scenes/Sleep Screen - JollySleeping", targetFile, currentIllust.pos, currentIllust.depth, currentIllust.shader));
-			self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassIllust.folderName, grassIllust.fileName, grassIllust.pos, grassIllust.depth, grassIllust.shader)); //grass
+
+			string grassFolder = spearmaster ? "scenes/sleep screen - spear" : "scenes/sleep screen - white";
+			self.AddIllustration(new MenuDepthIllustration(self.menu, self, grassFolder, grassIllust.fileName, grassIllust.pos, grassIllust.depth, grassIllust.shader)); //grass
 
 			// remove old stuff
-			currentIllust.RemoveSprites();
-			self.depthIllustrations.Remove(currentIllust);
-			self.RemoveSubObject(currentIllust);
-			currentIllust = null;
-			grassIllust.RemoveSprites();
-			self.depthIllustrations.Remove(grassIllust);
-			self.RemoveSubObject(grassIllust);
-			grassIllust = null;
+			RemoveIllustration(self, currentIllust);
+			RemoveIllustration(self, grassIllust);
 
 			if (setPos)
 			{
@@ -180,8 +199,17 @@ namespace JollySleeping
 			}
 		}
 
-		private MenuDepthIllustration tempMonk;
+		private void RemoveIllustration(MenuScene self, MenuDepthIllustration illustToRemove)
+		{
+			if (illustToRemove != null)
+			{
+				illustToRemove.RemoveSprites();
+				self.depthIllustrations.Remove(illustToRemove);
+				self.RemoveSubObject(illustToRemove);
+			}
+		}
 
+		private MenuDepthIllustration tempMonk;
 		private void ToggleMonk(MenuScene self)
 		{
 			if (tempMonk != null)
@@ -235,6 +263,26 @@ namespace JollySleeping
 				result.Add(illustration.fileName, illustration.pos.ToString());
 			}
 			return result;
+		}
+
+		private void MenuScene_GrafUpdateHK(On.Menu.MenuScene.orig_GrafUpdate orig, MenuScene self, float timeStacker)
+		{
+			orig(self, timeStacker);
+			if (disableDepth)
+			{
+				Shader.SetGlobalFloat("_BlurDepth", 0f);
+				Shader.SetGlobalFloat("_BlurRange", 0f);
+				Shader.SetGlobalVector("_MenuCamPos", Vector2.zero);
+			}
+		}
+
+		private Vector2 MenuScene_CamPosHK(On.Menu.MenuScene.orig_CamPos orig, MenuScene self, float timeStacker)
+		{
+			if (disableDepth)
+			{
+				return Vector2.zero;
+			}
+			return orig(self, timeStacker);
 		}
 	}
 }

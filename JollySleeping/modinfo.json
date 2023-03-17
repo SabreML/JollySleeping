@@ -1,11 +1,11 @@
 {
-    "id": "sabreml.jollysleeping",
-    "name": "Jolly Sleeping",
-    "version": "0.1.0",
-    "target_game_version": "v1.9.04",
-    "authors": "SabreML",
-    "description": "Blah blah placeholder!",
-    "requirements": ["jollycoop"],
-    "requirements_names": ["Jolly Co-op"],
-    "checksum_override_version": true
+	"id": "sabreml.jollysleeping",
+	"name": "Jolly Sleeping",
+	"version": "0.1.0",
+	"target_game_version": "v1.9.06",
+	"authors": "SabreML",
+	"description": "Blah blah placeholder!",
+	"requirements": ["jollycoop"],
+	"requirements_names": ["Jolly Co-op"],
+	"checksum_override_version": true
 }
